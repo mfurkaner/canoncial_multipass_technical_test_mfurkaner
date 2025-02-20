@@ -119,7 +119,7 @@ int main(int argc, char* argv[]) {
             if (clean_output) {
                 std::cout << lts.release_codename << "\n";
             } else {
-                std::cout << "Current LTS Version:\n"
+                std::cout << "Current LTS Version of  Ubuntu Cloud (amd64):\n"
                           << " - " << lts.release_title 
                           << " (" << lts.release_codename << ")\n";
             }
