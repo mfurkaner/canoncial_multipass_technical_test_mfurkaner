@@ -31,7 +31,6 @@ int main(int argc, char* argv[]) {
     std::string argument;
     std::vector<std::string> args(argv, argv + argc);
 
-
     // Parse command line arguments
     for (size_t i = 1; i < args.size(); ++i) {
         if (args[i] == "--help") {
@@ -77,13 +76,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    if (command == Command::None){
+    if (command == Command::None) {
         if (!clean_output) {
             std::cerr << "Error: No command specified\n";
             PrintHelp();
         }
         return 1;
     }
+
     // Fetch data
     auto err = fetcher.FetchLatestImageInfo(url);
     
@@ -107,7 +107,23 @@ int main(int argc, char* argv[]) {
     // Execute command
     switch(command) {
         case Command::ListReleases: {
-            auto releases = fetcher.GetCurrentlySupportedReleases();
+            auto result = fetcher.GetCurrentlySupportedReleases();
+            if (std::holds_alternative<APIError>(result)) {
+                if (!clean_output) {
+                    auto error = std::get<APIError>(result);
+                    std::cerr << "Error: ";
+                    switch(error) {
+                        case APIError::NotFetched:
+                            std::cerr << "Data not fetched - try again\n";
+                            break;
+                        default:
+                            std::cerr << "Unknown error\n";
+                    }
+                }
+                return 1;
+            }
+
+            auto releases = std::get<const std::vector<UbuntuCloudImageSimplestreamsProduct>>(result);
             if (!clean_output) {
                 std::cout << "Currently supported Ubuntu Cloud releases (amd64):\n";
             }
@@ -123,11 +139,30 @@ int main(int argc, char* argv[]) {
         }
         
         case Command::CurrentLTS: {
-            auto lts = fetcher.GetCurrentLTSVersion();
+            auto result = fetcher.GetCurrentLTSVersion();
+            if (std::holds_alternative<APIError>(result)) {
+                if (!clean_output) {
+                    auto error = std::get<APIError>(result);
+                    std::cerr << "Error: ";
+                    switch(error) {
+                        case APIError::NotFetched:
+                            std::cerr << "Data not fetched - try again\n";
+                            break;
+                        case APIError::NotFound:
+                            std::cerr << "LTS version not found in data\n";
+                            break;
+                        default:
+                            std::cerr << "Unknown error\n";
+                    }
+                }
+                return 1;
+            }
+
+            auto lts = std::get<const UbuntuCloudImageSimplestreamsProduct>(result);
             if (clean_output) {
                 std::cout << lts.release_title << "\n";
             } else {
-                std::cout << "Current LTS Version of  Ubuntu Cloud (amd64):\n"
+                std::cout << "Current LTS Version:\n"
                           << " - " << lts.release_title 
                           << " (" << lts.release_codename << ")\n";
             }
@@ -150,6 +185,9 @@ int main(int argc, char* argv[]) {
                         case APIError::NotFound:
                             std::cerr << "Version not found\n";
                             break;
+                        case APIError::NotFetched:
+                            std::cerr << "Data not fetched - try again\n";
+                            break;
                         default:
                             std::cerr << "Unknown error\n";
                     }
@@ -159,7 +197,7 @@ int main(int argc, char* argv[]) {
             if(!clean_output){
                 std::cout << "SHA256 of disk1.img for " << argument << " : ";
             }
-            std::cout << std::get<std::string>(res) << "\n";
+            std::cout << std::get<const std::string>(res) << "\n";
             break;
         }
         
@@ -176,23 +214,25 @@ int main(int argc, char* argv[]) {
                         case APIError::NotFound:
                             std::cerr << "Publication name not found\n";
                             break;
+                        case APIError::NotFetched:
+                            std::cerr << "Data not fetched - try again\n";
+                            break;
                         default:
                             std::cerr << "Unknown error\n";
                     }
                 }
-
                 return 1;
             }
             if(!clean_output){
                 std::cout << "SHA256 of disk1.img for " << argument << " : ";
             }
-            std::cout << std::get<std::string>(res) << "\n";
+            std::cout << std::get<const std::string>(res) << "\n";
             break;
         }
         
-        case Command::None:
+        default:
             if (!clean_output) {
-                std::cerr << "Error: No command specified\n";
+                std::cerr << "Error: Invalid command\n";
                 PrintHelp();
             }
             return 1;

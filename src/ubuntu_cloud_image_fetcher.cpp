@@ -26,10 +26,8 @@ JsonResult UbuntuCloudImageFetcher::_fetchJson(const std::string& url) {
         path = url.substr(path_start);
     }
 
-    // Create an HTTP client
     httplib::Client cli(host.c_str());
 
-    // Send a GET request
     auto res = cli.Get(path.c_str());
 
     // Check for errors
@@ -111,14 +109,27 @@ FetchError UbuntuCloudImageFetcher::_parseJson(const json& j) {
 }
 
 FetchError UbuntuCloudImageFetcher::FetchLatestImageInfo(const std::string& url) {
+    // Clearup the previous data
     _fetched_sample.Clear();
+    // Get the JSON data
     auto json_data = _fetchJson(url);
+    // If there is an error, abort
     if (!std::holds_alternative<json>(json_data)) return FetchError::FetchFailed;
-    return _parseJson(std::get<json>(json_data));
+
+    // Parse the JSON data
+    auto result = _parseJson(std::get<json>(json_data));
+
+    // If there is no error, update _fetched
+    if ( result == FetchError::NoError ) _fetched = true;
+
+    return result;
 }
 
 
-const std::vector<UbuntuCloudImageSimplestreamsProduct> UbuntuCloudImageFetcher::GetCurrentlySupportedReleases() const{
+std::variant<const std::vector<UbuntuCloudImageSimplestreamsProduct>, APIError> UbuntuCloudImageFetcher::GetCurrentlySupportedReleases() const{
+    // if not fetched, no reason to do calculation
+    if(_fetched == false) return APIError::NotFetched;
+    
     std::vector<UbuntuCloudImageSimplestreamsProduct> supported_releases;
     for(auto const& release : _fetched_sample.products){
         if(release.arch == "amd64" && release.supported){
@@ -130,9 +141,15 @@ const std::vector<UbuntuCloudImageSimplestreamsProduct> UbuntuCloudImageFetcher:
 }
 
 
-const UbuntuCloudImageSimplestreamsProduct UbuntuCloudImageFetcher::GetCurrentLTSVersion() const{
-    auto supported_releases = GetCurrentlySupportedReleases();
+std::variant<const UbuntuCloudImageSimplestreamsProduct, APIError> UbuntuCloudImageFetcher::GetCurrentLTSVersion() const{
+    // if not fetched, no reason to do calculation
+    if(_fetched == false) return APIError::NotFetched;
 
+    auto supported_releases_err = GetCurrentlySupportedReleases();
+
+    if (std::holds_alternative<APIError>(supported_releases_err)) return std::get<APIError>(supported_releases_err);
+
+    auto supported_releases = std::get<const std::vector<UbuntuCloudImageSimplestreamsProduct>>(supported_releases_err);
 
     double latest_version = 0.0;
     UbuntuCloudImageSimplestreamsProduct latest;
@@ -147,12 +164,13 @@ const UbuntuCloudImageSimplestreamsProduct UbuntuCloudImageFetcher::GetCurrentLT
             latest = release;
         }
     }
-
+    if ( latest_version == 0.0 ) return APIError::NotFound;
     return latest;
 }
 
-
-const std::variant<std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofDisk1ImgByURI(const std::string& uri) const {
+std::variant<const std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofDisk1ImgByURI(const std::string& uri) const {
+    // if not fetched, no reason to do calculation
+    if(_fetched == false) return APIError::NotFetched;
     std::string sha_res;
 
     std::string version_name;
@@ -229,15 +247,18 @@ const std::variant<std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofD
 }
 
 
+std::variant<const std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofDisk1ImgByPubname(const std::string& pubname) const {
+    // if not fetched, no reason to do calculation
+    if(_fetched == false) return APIError::NotFetched;
 
-
-const std::variant<std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofDisk1ImgByPubname(const std::string& pubname) const {
+    // Pubname contains 5 dashes
     int dash_count = 0;
     for(const char& c : pubname)
         if(c == '-') dash_count++;
 
     if(dash_count != 5) return APIError::InvalidPubnameFormat;
 
+    // Split the pubname into parts
     std::vector<std::string> pubname_parts;
     std::string remaining = pubname;
     for(int i = 0; i < dash_count; i++){
@@ -250,11 +271,12 @@ const std::variant<std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofD
     }
     pubname_parts.push_back(remaining);
 
-
+    // There should be 6 parts
     if(pubname_parts.size() != 6) return APIError::InvalidPubnameFormat;
     
     std::string sha_res;
 
+    // Get the important parts
     std::string version_name = pubname_parts[2];
     std::string subversion_name = pubname_parts[5];
 
@@ -275,6 +297,7 @@ const std::variant<std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofD
         }
     }
     
+    // Find the requested version and its 
     for(auto product : _fetched_sample.products){
         if(product.version == version_name){
             for(auto subversion : product.versions){
