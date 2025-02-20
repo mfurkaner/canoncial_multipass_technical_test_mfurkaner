@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-struct UbuntuImageSimplestreamsProductVersionItem{
+struct UbuntuCloudImageSimplestreamsProductVersionItem{
     std::string json_name;
 
     std::string ftype;
@@ -14,7 +14,7 @@ struct UbuntuImageSimplestreamsProductVersionItem{
     uint64_t size;
 };
 
-struct UbuntuImageSimplestreamsProductVersion{
+struct UbuntuCloudImageSimplestreamsProductVersion{
     std::string json_name;
 
     std::vector<UbuntuImageSimplestreamsProductVersionItem> items;
@@ -23,7 +23,7 @@ struct UbuntuImageSimplestreamsProductVersion{
 };
 
 
-struct UbuntuImageSimplestreamsProduct{
+struct UbuntuCloudImageSimplestreamsProduct{
     std::string json_name;
 
     std::string aliases;
@@ -38,14 +38,24 @@ struct UbuntuImageSimplestreamsProduct{
     std::vector<UbuntuImageSimplestreamsProductVersion> versions;
 };
 
-struct UbuntuImageSimplestreamsFetch{
+struct UbuntuCloudImageSimplestreamsFetch{
     std::string content_id;
     std::string creator;
     std::string datatype;
     std::string format;
     std::string license;
-    std::vector<UbuntuImageSimplestreamsProduct> products;
+    std::vector<UbuntuCloudSimplestreamsProduct> products;
     std::string updated;
+
+    void Clear(){
+        content_id.clear();
+        creator.clear();
+        datatype.clear();
+        format.clear();
+        license.clear();
+        products.clear();
+        updated.clear();
+    }
 };
 
 
