@@ -110,24 +110,6 @@ FetchError UbuntuCloudImageFetcher::_parseJson(const json& j) {
     return FetchError::NoError;
 }
 
-void UbuntuCloudImageFetcher::Test(const std::string& url){
-    auto json_data = _fetchJson(url);
-    if (!std::holds_alternative<json>(json_data)) return ;
-
-    auto j = std::get<json>(json_data);
-
-    _parseJson(j);
-
-    std::cout << "Currently supported versions of Ubuntu Cloud in amd64 architecture : \n";
-    for(auto const& release : _fetched_sample.products){
-        if(release.arch == "amd64" && release.supported){
-            std::cout << "   - " << release.release_title << " (" << release.release_codename << ")\n";
-        }
-    }
-
-
-}
-
 FetchError UbuntuCloudImageFetcher::FetchLatestImageInfo(const std::string& url) {
     _fetched_sample.Clear();
     auto json_data = _fetchJson(url);
