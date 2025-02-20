@@ -17,7 +17,7 @@ struct UbuntuCloudImageSimplestreamsProductVersionItem{
 struct UbuntuCloudImageSimplestreamsProductVersion{
     std::string json_name;
 
-    std::vector<UbuntuImageSimplestreamsProductVersionItem> items;
+    std::vector<UbuntuCloudImageSimplestreamsProductVersionItem> items;
     std::string label;
     std::string pubname;
 };
@@ -35,7 +35,7 @@ struct UbuntuCloudImageSimplestreamsProduct{
     std::string support_eol;
     bool supported;
     std::string version;
-    std::vector<UbuntuImageSimplestreamsProductVersion> versions;
+    std::vector<UbuntuCloudImageSimplestreamsProductVersion> versions;
 };
 
 struct UbuntuCloudImageSimplestreamsFetch{
@@ -44,9 +44,10 @@ struct UbuntuCloudImageSimplestreamsFetch{
     std::string datatype;
     std::string format;
     std::string license;
-    std::vector<UbuntuCloudSimplestreamsProduct> products;
+    std::vector<UbuntuCloudImageSimplestreamsProduct> products;
     std::string updated;
 
+    // Clear all the data
     void Clear(){
         content_id.clear();
         creator.clear();
