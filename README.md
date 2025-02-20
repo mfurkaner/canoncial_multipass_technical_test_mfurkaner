@@ -23,13 +23,22 @@ A C++ command-line tool to fetch Ubuntu Cloud image information from Simplestrea
 
 # Build Instructions
 
+For MacOS and Linux
 ```bash
 mkdir build && cd build
 cmake ..
 cmake --build .
 ```
 
-The executable will be created as 'UbuntuImageFetcher' in the build directory
+
+For Windows
+```bash
+mkdir build && cd build
+cmake ..
+cmake --build . --release
+```
+The executable will be created as 'UbuntuImageFetcher' in the build directory on Linux & MacOS, 
+will be on build/Release on Windows.
 
 # Usage
 
