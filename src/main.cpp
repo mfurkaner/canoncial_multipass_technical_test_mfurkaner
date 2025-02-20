@@ -31,14 +31,6 @@ int main(int argc, char* argv[]) {
     std::string argument;
     std::vector<std::string> args(argv, argv + argc);
 
-    if (args.size() < 1){
-        if (!clean_output) {
-            std::cerr << "Error: No command specified\n";
-            PrintHelp();
-        }
-        return 1;
-    }
-
 
     // Parse command line arguments
     for (size_t i = 1; i < args.size(); ++i) {
@@ -85,6 +77,13 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    if (command == Command::None){
+        if (!clean_output) {
+            std::cerr << "Error: No command specified\n";
+            PrintHelp();
+        }
+        return 1;
+    }
     // Fetch data
     auto err = fetcher.FetchLatestImageInfo(url);
     
