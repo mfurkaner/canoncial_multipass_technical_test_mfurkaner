@@ -1,5 +1,5 @@
 #include "ubuntu_cloud_image_fetcher.h"
-#include <curl/curl.h>
+#include "httplib.h"
 #include <sstream>
 #include <ctime>
 #include <algorithm>
@@ -8,37 +8,41 @@
 
 using json = nlohmann::json;
 
-// CURL callback function
-static size_t WriteCallback(void* contents, size_t size, size_t nmemb, void* userp) {
-    ((std::string*)userp)->append((char*)contents, size * nmemb);
-    return size * nmemb;
-}
 
 JsonResult UbuntuCloudImageFetcher::_fetchJson(const std::string& url) {
-    CURL* curl = curl_easy_init();
-    std::string readBuffer;
-    
-    if(curl) {
-        curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
-        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
-        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &readBuffer);
-        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
-        curl_easy_setopt(curl, CURLOPT_TIMEOUT, 10L);
-        
-        CURLcode res = curl_easy_perform(curl);
-        curl_easy_cleanup(curl);
-        
-        if(res != CURLE_OK) {
-            return FetchError::FetchFailed;
-        }
-        
-        try {
-            return json::parse(readBuffer);
-        } catch (const json::parse_error&) {
-            return FetchError::FetchFailed;
-        }
+    // Parse the URL into host and path
+    std::string host, path;
+    size_t host_start = url.find("://");
+    if (host_start == std::string::npos) {
+        return FetchError::FetchFailed;
     }
-    return FetchError::FetchFailed;
+    host_start += 3; // Skip "://"
+    size_t path_start = url.find('/', host_start);
+    if (path_start == std::string::npos) {
+        host = url.substr(host_start);
+        path = "/";
+    } else {
+        host = url.substr(host_start, path_start - host_start);
+        path = url.substr(path_start);
+    }
+
+    // Create an HTTP client
+    httplib::Client cli(host.c_str());
+
+    // Send a GET request
+    auto res = cli.Get(path.c_str());
+
+    // Check for errors
+    if (!res || res->status != 200) {
+        return FetchError::FetchFailed;
+    }
+
+    // Parse the JSON response
+    try {
+        return json::parse(res->body);
+    } catch (const json::parse_error&) {
+        return FetchError::FetchFailed;
+    }
 }
 
 
@@ -132,8 +136,8 @@ FetchError UbuntuCloudImageFetcher::FetchLatestImageInfo(const std::string& url)
 }
 
 
-const std::vector<const UbuntuCloudImageSimplestreamsProduct> UbuntuCloudImageFetcher::GetCurrentlySupportedReleases() const{
-    std::vector<const UbuntuCloudImageSimplestreamsProduct> supported_releases;
+const std::vector<UbuntuCloudImageSimplestreamsProduct> UbuntuCloudImageFetcher::GetCurrentlySupportedReleases() const{
+    std::vector<UbuntuCloudImageSimplestreamsProduct> supported_releases;
     for(auto const& release : _fetched_sample.products){
         if(release.arch == "amd64" && release.supported){
             supported_releases.push_back(release);

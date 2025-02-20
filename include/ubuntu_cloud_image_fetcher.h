@@ -39,7 +39,7 @@ public:
     FetchError FetchLatestImageInfo(const std::string& url);
 
     // Returns the currently supported releases in the previously fetched sample
-    const std::vector<const UbuntuCloudImageSimplestreamsProduct> GetCurrentlySupportedReleases() const;
+    const std::vector<UbuntuCloudImageSimplestreamsProduct> GetCurrentlySupportedReleases() const;
 
     const UbuntuCloudImageSimplestreamsProduct GetCurrentLTSVersion() const;
 

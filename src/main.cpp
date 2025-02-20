@@ -31,6 +31,15 @@ int main(int argc, char* argv[]) {
     std::string argument;
     std::vector<std::string> args(argv, argv + argc);
 
+    if (args.size() < 1){
+        if (!clean_output) {
+            std::cerr << "Error: No command specified\n";
+            PrintHelp();
+        }
+        return 1;
+    }
+
+
     // Parse command line arguments
     for (size_t i = 1; i < args.size(); ++i) {
         if (args[i] == "--help") {
@@ -105,7 +114,7 @@ int main(int argc, char* argv[]) {
             }
             for(const auto& release : releases) {
                 if (clean_output) {
-                    std::cout << release.release_codename << "\n";
+                    std::cout << release.release_title << "\n";
                 } else {
                     std::cout << " - " << release.release_title 
                               << " (" << release.release_codename << ")\n";
