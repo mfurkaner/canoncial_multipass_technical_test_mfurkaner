@@ -125,7 +125,7 @@ int main(int argc, char* argv[]) {
         case Command::CurrentLTS: {
             auto lts = fetcher.GetCurrentLTSVersion();
             if (clean_output) {
-                std::cout << lts.release_codename << "\n";
+                std::cout << lts.release_title << "\n";
             } else {
                 std::cout << "Current LTS Version of  Ubuntu Cloud (amd64):\n"
                           << " - " << lts.release_title 
