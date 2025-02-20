@@ -15,19 +15,21 @@ A C++ command-line tool to fetch Ubuntu Cloud image information from Simplestrea
 
 - C++17 compatible compiler
 - CMake 3.15+
-- libcurl
-- nlohmann/json 
+
+## Dependencies
+
+- nlohmann/json
+- yhirose/cpp-httplib (header only)
 
 # Build Instructions
 
-## Create build directory
+```bash
 mkdir build && cd build
-
-## Configure and build
 cmake ..
-make
+cmake --build .
+```
 
-## The executable will be created as 'UbuntuImageFetcher' in the build directory
+The executable will be created as 'UbuntuImageFetcher' in the build directory
 
 # Usage
 
@@ -44,25 +46,39 @@ Options:
 
 Default URL: https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json
 
-# Examples
+## Examples
 
-## List supported releases
+List supported releases
+```bash
 ./UbuntuImageFetcher --list-releases
+```
 
-## Show current LTS
+Show current LTS
+```bash
 ./UbuntuImageFetcher --current-lts
+```
 
-## Get SHA256 by version path
+Get SHA256 by version path
+```bash
 ./UbuntuImageFetcher --sha256-uri "13.04/20140111"
+```
 
-## Get SHA256 by publication name
+Get SHA256 by publication name
+```bash
 ./UbuntuImageFetcher --sha256-pubname "ubuntu-trusty-14.04-amd64-server-20150227.2"
+```
 
-## List supported releases names only
+List supported releases names only
+```bash
 ./UbuntuImageFetcher --list-releases --clean
+```
 
-## Get LTS version name only
+Get LTS version name only
+```bash
 ./UbuntuImageFetcher --current-lts --clean
+```
 
-## Get pure SHA256 string
+Get pure SHA256 string
+```bash
 ./UbuntuImageFetcher --sha256-uri "13.04/20140111" --clean
+```
