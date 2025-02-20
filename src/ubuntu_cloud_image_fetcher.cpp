@@ -4,6 +4,7 @@
 #include <ctime>
 #include <algorithm>
 #include <iostream> 
+#include <string>
 
 using json = nlohmann::json;
 
@@ -164,7 +165,8 @@ const UbuntuCloudImageSimplestreamsProduct UbuntuCloudImageFetcher::GetCurrentLT
     return latest;
 }
 
-const std::variant<std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofDisk1Img(const std::string& uri) const {
+
+const std::variant<std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofDisk1ImgByURI(const std::string& uri) const {
     std::string sha_res;
 
     std::string version_name;
@@ -236,6 +238,73 @@ const std::variant<std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofD
             break;
         }
     }
+    if(sha_res.empty()) return APIError::NotFound;
+    return sha_res;
+}
 
+
+
+
+const std::variant<std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofDisk1ImgByPubname(const std::string& pubname) const {
+    int dash_count = 0;
+    for(const char& c : pubname)
+        if(c == '-') dash_count++;
+
+    if(dash_count != 5) return APIError::InvalidPubnameFormat;
+
+    std::vector<std::string> pubname_parts;
+    std::string remaining = pubname;
+    for(int i = 0; i < dash_count; i++){
+        size_t dash_pos = remaining.find('-');
+        if (dash_pos != std::string::npos)
+        {
+            pubname_parts.push_back(remaining.substr(0,  dash_pos));
+            remaining = remaining.substr(dash_pos + 1);
+        }
+    }
+    pubname_parts.push_back(remaining);
+
+
+    if(pubname_parts.size() != 6) return APIError::InvalidPubnameFormat;
+    
+    std::string sha_res;
+
+    std::string version_name = pubname_parts[2];
+    std::string subversion_name = pubname_parts[5];
+
+    size_t dot_pos = version_name.find('.');
+    // The version name is not correct format
+    if(version_name.empty() || dot_pos == std::string::npos || dot_pos == 0 || dot_pos == version_name.size() - 1) {
+        return APIError::InvalidPubnameFormat;
+    };
+
+
+    // The subversion name is not correct format
+    int dot_count = 0;
+    for(const char& c : subversion_name) {
+        if(c == '.') dot_count++;
+
+        if((std::isdigit(c) == false && c != '.') || dot_count > 1) {
+            return APIError::InvalidPubnameFormat;
+        }
+    }
+    
+    for(auto product : _fetched_sample.products){
+        if(product.version == version_name){
+            for(auto subversion : product.versions){
+                if(subversion.json_name == subversion_name){
+                    for(auto item : subversion.items){
+                        if(item.json_name == "disk1.img") {
+                            sha_res = item.sha256;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
+            break;
+        }
+    }
+    if(sha_res.empty()) return APIError::NotFound;
     return sha_res;
 }

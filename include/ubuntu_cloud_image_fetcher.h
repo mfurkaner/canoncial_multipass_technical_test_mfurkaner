@@ -19,6 +19,7 @@ enum class FetchError{
 enum class APIError{
     InvalidVersionFormat,
     InvalidSubversionFormat,
+    InvalidPubnameFormat,
     NotFound
 };
 
@@ -42,7 +43,8 @@ public:
 
     const UbuntuCloudImageSimplestreamsProduct GetCurrentLTSVersion() const;
 
-    const std::variant<std::string, APIError> GetSHA256ofDisk1Img(const std::string& uri) const;
+    const std::variant<std::string, APIError> GetSHA256ofDisk1ImgByURI(const std::string& uri) const;
+    const std::variant<std::string, APIError> GetSHA256ofDisk1ImgByPubname(const std::string& pubname) const;
 
     void Test(const std::string& url);
 };

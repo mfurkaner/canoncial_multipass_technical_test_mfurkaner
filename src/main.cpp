@@ -31,7 +31,7 @@ int main() {
         std::cout << "   - " << current_lts.release_title << " (" << current_lts.release_codename << ")\n";
 
         std::cout << "SHA256 of image 13.04/20140111 : \n";
-        auto res = fetcher.GetSHA256ofDisk1Img("13.04/20140111");
+        auto res = fetcher.GetSHA256ofDisk1ImgByURI("13.04/20140111");
 
         if (std::holds_alternative<APIError>(res)) {
             auto err = std::get<APIError>(res);
@@ -50,6 +50,29 @@ int main() {
         }
         else if (std::holds_alternative<std::string>(res)){
             auto sha256 = std::get<std::string>(res);
+            std::cout << "SHA256: " << sha256 << "\n";
+        }
+        else{
+            std::cerr << "How did you get here?\n"; 
+        }
+
+        std::cout << "SHA256 of image ubuntu-trusty-14.04-amd64-server-20150227.2 : \n";
+        auto res2 = fetcher.GetSHA256ofDisk1ImgByPubname("ubuntu-trusty-14.04-amd64-server-20150227.2");
+
+        if (std::holds_alternative<APIError>(res2)) {
+            auto err = std::get<APIError>(res2);
+
+            switch(err){
+                case APIError::InvalidPubnameFormat:
+                    std::cerr << "Invalid pubname format\n";
+                    break;
+                case APIError::NotFound:
+                    std::cerr << "Version not found\n";
+                    break;
+            }
+        }
+        else if (std::holds_alternative<std::string>(res2)){
+            auto sha256 = std::get<std::string>(res2);
             std::cout << "SHA256: " << sha256 << "\n";
         }
         else{
