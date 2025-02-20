@@ -1,12 +1,62 @@
 #include <iostream>
 #include "ubuntu_cloud_image_fetcher.h"
 
-int main(){
-
+int main() {
     UbuntuCloudImageFetcher fetcher;
     const std::string url = "https://cloud-images.ubuntu.com/releases/streams/v1/com.ubuntu.cloud:released:download.json";
     
-    fetcher.Test(url);
+    auto err = fetcher.FetchLatestImageInfo(url);
+
+
+    if( err == FetchError::FetchFailed ){
+
+    }
+    else if (err == FetchError::JsonParseFailed)
+    {
+        /* code */
+    }
+    else if (err == FetchError::NoError)
+    {
+        auto current_supported_releases = fetcher.GetCurrentlySupportedReleases();
+
+        std::cout << "Currently supported versions of Ubuntu Cloud in amd64 architecture : \n";
+        for(auto const& release : current_supported_releases){
+            std::cout << "   - " << release.release_title << " (" << release.release_codename << ")\n";
+        }
+
+
+        std::cout << "Currently LTS version : \n";
+        auto current_lts = fetcher.GetCurrentLTSVersion();
+
+        std::cout << "   - " << current_lts.release_title << " (" << current_lts.release_codename << ")\n";
+
+        std::cout << "SHA256 of image 13.04/20140111 : \n";
+        auto res = fetcher.GetSHA256ofDisk1Img("13.04/20140111");
+
+        if (std::holds_alternative<APIError>(res)) {
+            auto err = std::get<APIError>(res);
+
+            switch(err){
+                case APIError::InvalidVersionFormat:
+                    std::cerr << "Invalid version format\n";
+                    break;
+                case APIError::InvalidSubversionFormat:
+                    std::cerr << "Invalid subversion format\n";
+                    break;
+                case APIError::NotFound:
+                    std::cerr << "Version not found\n";
+                    break;
+            }
+        }
+        else if (std::holds_alternative<std::string>(res)){
+            auto sha256 = std::get<std::string>(res);
+            std::cout << "SHA256: " << sha256 << "\n";
+        }
+        else{
+            std::cerr << "How did you get here?\n"; 
+        }
+    }
     
-    return EXIT_SUCCESS;
+
+    return 0;
 }

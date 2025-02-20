@@ -111,16 +111,131 @@ void UbuntuCloudImageFetcher::Test(const std::string& url){
 
     auto j = std::get<json>(json_data);
 
-    auto err = _parseJson(j);
+    _parseJson(j);
 
-    if (err == FetchError::NoError){
-
-        std::cout << "Currently supported versions of Ubuntu Cloud in amd64 architecture : \n";
-        for(auto const& release : _fetched_sample.products){
-            if(release.arch == "amd64" && release.supported){
-                std::cout << "   - " << release.release_title << " (" << release.release_codename << ")\n";
-            }
+    std::cout << "Currently supported versions of Ubuntu Cloud in amd64 architecture : \n";
+    for(auto const& release : _fetched_sample.products){
+        if(release.arch == "amd64" && release.supported){
+            std::cout << "   - " << release.release_title << " (" << release.release_codename << ")\n";
         }
     }
 
+
+}
+
+FetchError UbuntuCloudImageFetcher::FetchLatestImageInfo(const std::string& url) {
+    _fetched_sample.Clear();
+    auto json_data = _fetchJson(url);
+    if (!std::holds_alternative<json>(json_data)) return FetchError::FetchFailed;
+    return _parseJson(std::get<json>(json_data));
+}
+
+
+const std::vector<const UbuntuCloudImageSimplestreamsProduct> UbuntuCloudImageFetcher::GetCurrentlySupportedReleases() const{
+    std::vector<const UbuntuCloudImageSimplestreamsProduct> supported_releases;
+    for(auto const& release : _fetched_sample.products){
+        if(release.arch == "amd64" && release.supported){
+            supported_releases.push_back(release);
+        }
+    }
+
+    return supported_releases;
+}
+
+
+const UbuntuCloudImageSimplestreamsProduct UbuntuCloudImageFetcher::GetCurrentLTSVersion() const{
+    auto supported_releases = GetCurrentlySupportedReleases();
+
+
+    double latest_version = 0.0;
+    UbuntuCloudImageSimplestreamsProduct latest;
+    for(auto const& release : supported_releases){
+        if (release.release_title.find("LTS") == std::string::npos) continue;
+
+
+        double version = std::stod(release.version);
+
+        if(version > latest_version){
+            latest_version = version;
+            latest = release;
+        }
+    }
+
+    return latest;
+}
+
+const std::variant<std::string, APIError>  UbuntuCloudImageFetcher::GetSHA256ofDisk1Img(const std::string& uri) const {
+    std::string sha_res;
+
+    std::string version_name;
+    std::string subversion_name;
+
+
+    size_t slash_pos = uri.find('/');
+
+    if (slash_pos == std::string::npos || slash_pos + 1 >= uri.size()) {
+        // Only one part
+        version_name = uri;
+    } else {
+        // Two parts
+        version_name = uri.substr(0, slash_pos);
+        subversion_name = uri.substr(slash_pos + 1);
+    }
+
+    size_t dot_pos = version_name.find('.');
+    // The version name is not correct format
+    if(version_name.empty() || dot_pos == std::string::npos || dot_pos == 0 || dot_pos == version_name.size() - 1) {
+        return APIError::InvalidVersionFormat;
+    };
+
+    // The subversion name is not correct format
+    int dot_count = 0;
+    for(const char& c : subversion_name) {
+        if(c == '.') dot_count++;
+
+        if(std::isdigit(c) == false || dot_count > 1) {
+            return APIError::InvalidSubversionFormat;
+        }
+    }
+    
+    for(auto product : _fetched_sample.products){
+        if(product.version == version_name){
+            // We found the requested version, now lets check the subversion if present
+
+            // if the user provided a subversion
+            if(subversion_name.empty() == false){
+                for(auto subversion : product.versions){
+                    if(subversion.json_name == subversion_name){
+                        for(auto item : subversion.items){
+                            if(item.json_name == "disk1.img") {
+                                sha_res = item.sha256;
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            // No subversion provided return the latest subversion
+            else{
+                int latest = 0;
+                for(auto subversion : product.versions){
+                    int name_i = std::stoi(subversion.json_name);
+                    if(name_i > latest){
+                        for(auto item : subversion.items){
+                            if(item.json_name == "disk1.img"){
+                                sha_res = item.sha256;
+                                // dont change the latest if no disk1.img is present
+                                latest = name_i;
+                                break;
+                            }
+                        }
+                    }
+                }
+            } 
+            break;
+        }
+    }
+
+    return sha_res;
 }

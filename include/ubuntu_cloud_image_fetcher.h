@@ -16,6 +16,13 @@ enum class FetchError{
     JsonParseFailed
 };
 
+enum class APIError{
+    InvalidVersionFormat,
+    InvalidSubversionFormat,
+    NotFound
+};
+
+
 using JsonResult = std::variant<nlohmann::json, FetchError>;
 
 
@@ -28,6 +35,15 @@ private:
     FetchError _parseJson(const nlohmann::json& json);
 
 public:
+    FetchError FetchLatestImageInfo(const std::string& url);
+
+    // Returns the currently supported releases in the previously fetched sample
+    const std::vector<const UbuntuCloudImageSimplestreamsProduct> GetCurrentlySupportedReleases() const;
+
+    const UbuntuCloudImageSimplestreamsProduct GetCurrentLTSVersion() const;
+
+    const std::variant<std::string, APIError> GetSHA256ofDisk1Img(const std::string& uri) const;
+
     void Test(const std::string& url);
 };
 
